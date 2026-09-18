@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Creation Agent</title>
+<style>
+:root {
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --text: #172033;
+  --muted: #667085;
+  --line: #e4e7ec;
+  --primary: #5b5ce2;
+  --primary-dark: #4748c7;
+  --success: #12b76a;
+  --shadow: 0 12px 35px rgba(16, 24, 40, .08);
+  --radius: 18px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 85% 5%, rgba(91,92,226,.10), transparent 28%),
+    var(--bg);
+}
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+.app { min-height: 100vh; display: flex; }
+.sidebar {
+  width: 250px;
+  background: #101426;
+  color: #fff;
+  padding: 26px 18px;
+  position: fixed;
+  inset: 0 auto 0 0;
+}
+.brand { display:flex; align-items:center; gap:12px; padding: 4px 10px 30px; }
+.logo {
+  width: 38px; height: 38px; border-radius: 11px;
+  display:grid; place-items:center; font-weight:800;
+  background: linear-gradient(135deg,#7778ff,#4c4dd1);
+}
+.brand strong { font-size: 16px; }
+.brand span { display:block; font-size:11px; color:#98a2b3; margin-top:3px; }
+.nav { display:flex; flex-direction:column; gap:7px; }
+.nav-item {
+  display:flex; align-items:center; gap:12px; padding:12px 13px;
+  border-radius:12px; color:#b8c0d0; font-size:14px;
+}
+.nav-item.active { background:rgba(255,255,255,.10); color:#fff; }
+.nav-icon { width:20px; text-align:center; }
+.sidebar-bottom {
+  position:absolute; left:18px; right:18px; bottom:22px;
+  border-top:1px solid rgba(255,255,255,.09); padding-top:18px;
+  color:#98a2b3; font-size:12px;
+}
+.main { margin-left:250px; width:calc(100% - 250px); }
+.topbar {
+  height:72px; background:rgba(255,255,255,.88); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line); display:flex; align-items:center;
+  justify-content:space-between; padding:0 34px; position:sticky; top:0; z-index:10;
+}
+.breadcrumb { color:var(--muted); font-size:13px; }
+.breadcrumb b { color:var(--text); }
+.status { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--success); }
+.content { padding:34px; max-width:1450px; margin:auto; }
+.hero { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; }
+.hero h1 { margin:0; font-size:31px; letter-spacing:-.8px; }
+.hero p { margin:8px 0 0; color:var(--muted); font-size:14px; }
+.state-pill {
+  padding:9px 13px; background:#eef0ff; color:#4748c7; border-radius:999px;
+  font-size:12px; font-weight:700;
+}
+.grid { display:grid; grid-template-columns: 390px 1fr; gap:24px; align-items:start; }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+.form-panel { padding:24px; position:sticky; top:96px; }
+.panel-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.panel-title h2 { font-size:17px; margin:0; }
+.panel-title span { color:var(--muted); font-size:12px; }
+.field { margin-bottom:17px; }
+label { display:block; font-size:12px; font-weight:700; margin-bottom:8px; color:#344054; }
+input, textarea, select {
+  width:100%; border:1px solid #d8dee8; border-radius:11px; padding:12px 13px;
+  outline:none; background:#fff; color:var(--text); transition:.2s;
+}
+textarea { min-height:82px; resize:vertical; }
+input:focus, textarea:focus, select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(91,92,226,.10); }
+.lengths { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.lengths button {
+  border:1px solid var(--line); background:#fff; padding:10px 7px; border-radius:10px;
+  color:#475467; font-size:12px;
+}
+.lengths button.active { background:#eef0ff; border-color:#b9baff; color:#4748c7; font-weight:700; }
+.primary {
+  width:100%; border:0; border-radius:12px; padding:13px 16px; color:#fff;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark)); font-weight:750;
+  box-shadow:0 8px 18px rgba(91,92,226,.22);
+}
+.primary:disabled { opacity:.55; cursor:not-allowed; box-shadow:none; }
+.workspace { min-width:0; }
+.empty {
+  min-height:500px; display:grid; place-items:center; text-align:center; padding:50px;
+}
+.empty-icon {
+  width:70px;height:70px;border-radius:20px;background:#eef0ff;color:#5b5ce2;
+  display:grid;place-items:center;font-size:29px;margin:0 auto 16px;
+}
+.empty h3 { margin:0 0 8px; font-size:19px; }
+.empty p { margin:0; max-width:420px; color:var(--muted); font-size:13px; line-height:1.6; }
+.options { padding:24px; display:none; }
+.options-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.options-header h2 { margin:0; font-size:18px; }
+.options-header p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+.cards { display:grid; grid-template-columns:repeat(3,1fr); gap:15px; }
+.card {
+  border:1px solid var(--line); border-radius:15px; padding:18px; background:#fff;
+  transition:.2s; display:flex; flex-direction:column; min-height:330px;
+}
+.card:hover { transform:translateY(-2px); box-shadow:0 10px 25px rgba(16,24,40,.07); }
+.card.selected { border:2px solid var(--primary); box-shadow:0 10px 28px rgba(91,92,226,.13); }
+.badge {
+  width:30px;height:30px;border-radius:9px;background:#f0f1ff;color:#4b4ccf;
+  display:grid;place-items:center;font-weight:800;font-size:12px;margin-bottom:14px;
+}
+.card h3 { margin:0 0 12px; font-size:15px; line-height:1.4; }
+.card-content {
+  color:#475467; font-size:13px; line-height:1.65; white-space:pre-wrap;
+  display:-webkit-box; -webkit-line-clamp:10; -webkit-box-orient:vertical; overflow:hidden;
+  flex:1;
+}
+.select-btn {
+  margin-top:17px; border:1px solid #d8dee8; background:#fff; border-radius:10px;
+  padding:10px; font-weight:700; color:#344054;
+}
+.card.selected .select-btn { background:var(--primary); color:#fff; border-color:var(--primary); }
+.editor { display:none; margin-top:18px; }
+.editor-panel { padding:24px; }
+.editor-top { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:16px; }
+.editor-top h2 { margin:0; font-size:18px; }
+.meta { color:var(--muted); font-size:12px; }
+.editor textarea { min-height:340px; line-height:1.7; font-size:14px; }
+.actions { display:flex; gap:10px; margin-top:13px; }
+.secondary {
+  border:1px solid var(--line); background:#fff; color:#344054; border-radius:10px;
+  padding:11px 15px; font-weight:700;
+}
+.approve { border:0; background:#12b76a; color:#fff; border-radius:10px; padding:11px 17px; font-weight:750; }
+.revision { margin-top:17px; padding-top:18px; border-top:1px solid var(--line); }
+.revision-row { display:flex; gap:10px; }
+.revision-row textarea { min-height:55px; flex:1; }
+.revise-btn { align-self:stretch; padding:0 18px; border:0; background:#101426; color:#fff; border-radius:10px; font-weight:700; }
+.success {
+  display:none; margin-top:18px; padding:18px; border-radius:14px;
+  background:#ecfdf3; border:1px solid #abefc6; color:#067647;
+}
+.toast {
+  position:fixed; right:25px; bottom:25px; background:#101426; color:#fff;
+  padding:13px 16px; border-radius:11px; font-size:13px; opacity:0; transform:translateY(10px);
+  pointer-events:none; transition:.25s; z-index:50;
+}
+.toast.show { opacity:1; transform:none; }
+.loading { display:none; align-items:center; gap:9px; color:var(--muted); font-size:12px; margin-top:12px; }
+.spinner { width:14px;height:14px;border:2px solid #d0d5dd;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media(max-width:1050px) {
+  .sidebar { width:210px; }
+  .main { margin-left:210px; width:calc(100% - 210px); }
+  .grid { grid-template-columns:1fr; }
+  .form-panel { position:static; }
+}
+@media(max-width:760px) {
+  .sidebar { display:none; }
+  .main { margin-left:0; width:100%; }
+  .content { padding:20px; }
+  .topbar { padding:0 20px; }
+  .cards { grid-template-columns:1fr; }
+  .hero { align-items:flex-start; gap:15px; flex-direction:column; }
+}
+
+    .library-view {
+      display: none;
+    }
+
+    .library-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .library-header h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -.02em;
+    }
+
+    .library-empty {
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255,255,255,.02);
+    }
+
+    .library-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,.025);
+    }
+
+    .library-card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .library-card h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .library-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .library-preview {
+      white-space: pre-wrap;
+      line-height: 1.65;
+      color: #344054;
+      background: #ffffff;
+      border: 1px solid #eef1f5;
+      border-radius: 10px;
+      padding: 14px;
+      max-height: 180px;
+      overflow: auto;
+      font-size: 13px;
+    }
+
+    .library-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-count {
+      margin-left: auto;
+      min-width: 22px;
+      height: 20px;
+      padding: 0 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">C</div>
+      <div><strong>Content Studio</strong><span>AI Content Creation</span></div>
+    </div>
+    <div class="nav">
+      <div class="nav-item active" id="writeNav">
+        <span class="nav-icon">✦</span> Write Content
+      </div>
+      <div class="nav-item" id="draftsNav">
+        <span class="nav-icon">◫</span> My Drafts
+        <span class="nav-count" id="draftCount">0</span>
+      </div>
+      <div class="nav-item" id="approvedNav">
+        <span class="nav-icon">✓</span> Approved
+        <span class="nav-count" id="approvedCount">0</span>
+      </div>
+    </div>
+    <div class="sidebar-bottom">Powered by Azure AI Foundry · GPT-4.1</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="breadcrumb">Content Studio &nbsp;/&nbsp; <b id="pageTitle">Write Content</b></div>
+      <div class="status"><span class="dot"></span> AI service connected</div>
+    </header>
+
+    <section class="content">
+      <div class="hero">
+        <div>
+          <h1>Create high-quality content</h1>
+          <p>Describe what you need. The AI will generate three distinct directions for you to choose from.</p>
+        </div>
+        <div class="state-pill" id="statePill">NEW REQUEST</div>
+      </div>
+
+      <div class="grid">
+        <section class="panel form-panel">
+          <div class="panel-title">
+            <h2>Content brief</h2>
+            <span>6 inputs</span>
+          </div>
+
+          <div class="field">
+            <label for="topic">What is this about?</label>
+            <textarea id="topic" placeholder="e.g. Artificial Intelligence in healthcare"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="platform">Where will you post it?</label>
+            <select id="platform">
+              <option value="">Select platform</option>
+              <option>LinkedIn</option>
+              <option>Instagram</option>
+              <option>Facebook</option>
+              <option>X / Twitter</option>
+              <option>Blog</option>
+              <option>Website</option>
+              <option>Email</option>
+              <option>Newsletter</option>
+              <option>Press Release</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="audience">Who is it for?</label>
+            <input id="audience" placeholder="e.g. Healthcare professionals">
+          </div>
+
+          <div class="field">
+            <label for="mood">What mood?</label>
+            <input id="mood" placeholder="e.g. Professional and inspiring">
+          </div>
+
+          <div class="field">
+            <label>How long should it be?</label>
+            <div class="lengths">
+              <button type="button" data-length="Short">Short</button>
+              <button type="button" data-length="Medium" class="active">Medium</button>
+              <button type="button" data-length="Long">Long</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="goal">What should people do after reading?</label>
+            <textarea id="goal" placeholder="e.g. Share their opinion in the comments"></textarea>
+          </div>
+
+          <button class="primary" id="generateBtn">Generate 3 options</button>
+          <div class="loading" id="loading"><span class="spinner"></span> Creating three content directions...</div>
+        </section>
+
+        <section class="workspace">
+          <div class="panel empty" id="emptyState">
+            <div>
+              <div class="empty-icon">✦</div>
+              <h3>Your content options will appear here</h3>
+              <p>Complete the brief on the left and generate three distinct options. You can then select one, refine it, and approve the final version.</p>
+            </div>
+          </div>
+
+          <div class="panel options" id="optionsPanel">
+            <div class="options-header">
+              <div>
+                <h2>Choose your direction</h2>
+                <p>Three distinct approaches generated from your brief.</p>
+              </div>
+              <div class="state-pill" id="optionsState">OPTIONS READY</div>
+            </div>
+            <div class="cards" id="cards"></div>
+          </div>
+
+          <div class="panel editor-panel editor" id="editorPanel">
+            <div class="editor-top">
+              <div>
+                <h2>Selected content</h2>
+                <div class="meta" id="editorMeta">Option B · 0 revisions</div>
+              </div>
+              <div class="state-pill" id="editorState">OPTION SELECTED</div>
+            </div>
+
+            <textarea id="editor"></textarea>
+
+            <div class="actions">
+              <button class="secondary" id="copyBtn">Copy content</button>
+              <button class="approve" id="approveBtn">✓ Approve content</button>
+            </div>
+
+            <div class="revision">
+              <label for="revision">What would you like to change?</label>
+              <div class="revision-row">
+                <textarea id="revision" placeholder="e.g. Make the opening stronger and add a more engaging CTA."></textarea>
+                <button class="revise-btn" id="reviseBtn">Revise</button>
+              </div>
+            </div>
+
+            <div class="success" id="success">
+              <strong>Content approved.</strong><br>
+              This version is marked <b>READY TO SAVE</b>. You can still copy the approved content.
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="library-view" id="draftsView">
+      <div class="library-header">
+        <h2>My Drafts</h2>
+        <button class="btn btn-secondary" id="newDraftBtn">＋ New Draft</button>
+      </div>
+      <div id="draftsList"></div>
+    </section>
+
+    <section class="library-view" id="approvedView">
+      <div class="library-header">
+        <h2>Approved Content</h2>
+        <button class="btn btn-secondary" id="newApprovedBtn">＋ Write Content</button>
+      </div>
+      <div id="approvedList"></div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<script>
+let sessionId = null;
+let selectedOption = null;
+let selectedLength = "Medium";
+let currentSession = null;
+
+// Front-end library for the current browser session.
+const draftStore = [];
+const approvedStore = [];
+
+const $ = id => document.getElementById(id);
+
+/* ---------------------------
+   Basic UI helpers
+   --------------------------- */
+
+document.querySelectorAll(".lengths button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".lengths button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedLength = btn.dataset.length;
+  });
+});
+
+function showToast(message) {
+  const t = $("toast");
+  t.textContent = message;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function setState(state) {
+  $("statePill").textContent = state.replaceAll("_", " ");
+  $("optionsState").textContent = state.replaceAll("_", " ");
+  $("editorState").textContent = state.replaceAll("_", " ");
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function validateBrief() {
+  const fields = ["topic", "platform", "audience", "mood", "goal"];
+  for (const id of fields) {
+    if (!$(id).value.trim()) {
+      $(id).focus();
+      showToast("Please complete all required fields and choose a length.");
+      return false;
+    }
+  }
+  return true;
+}
+
+/* ---------------------------
+   Sidebar navigation
+   --------------------------- */
+
+function showMainView(viewName) {
+  const writeView = document.querySelector(".content");
+  const draftsView = $("draftsView");
+  const approvedView = $("approvedView");
+
+  writeView.style.display = viewName === "write" ? "block" : "none";
+  draftsView.style.display = viewName === "drafts" ? "block" : "none";
+  approvedView.style.display = viewName === "approved" ? "block" : "none";
+
+  $("writeNav").classList.toggle("active", viewName === "write");
+  $("draftsNav").classList.toggle("active", viewName === "drafts");
+  $("approvedNav").classList.toggle("active", viewName === "approved");
+
+  $("pageTitle").textContent =
+    viewName === "write"
+      ? "Write Content"
+      : viewName === "drafts"
+        ? "My Drafts"
+        : "Approved";
+
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+function updateLibraryCounts() {
+  $("draftCount").textContent = draftStore.length;
+  $("approvedCount").textContent = approvedStore.length;
+}
+
+/* ---------------------------
+   Drafts
+   --------------------------- */
+
+function saveCurrentAsDraft() {
+  if (!currentSession || !currentSession.content) return;
+
+  const item = {
+    session_id: currentSession.session_id,
+    title: currentSession.title || "Content draft",
+    platform: $("platform").value,
+    length: selectedLength,
+    topic: $("topic").value,
+    audience: $("audience").value,
+    mood: $("mood").value,
+    goal: $("goal").value,
+    content: currentSession.content,
+    option_id: currentSession.option_id || selectedOption,
+    updated: "Just now"
+  };
+
+  const index = draftStore.findIndex(d => d.session_id === item.session_id);
+
+  if (index >= 0) {
+    draftStore[index] = item;
+  } else {
+    draftStore.unshift(item);
+  }
+
+  updateLibraryCounts();
+  renderDrafts();
+}
+
+function renderDrafts() {
+  const container = $("draftsList");
+
+  if (!draftStore.length) {
+    container.innerHTML = `
+      <div class="library-empty">
+        <div style="font-size:28px;margin-bottom:10px;">▱</div>
+        <strong>No drafts yet</strong>
+        <div style="margin-top:6px;">Select a generated option and it will appear here.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = draftStore.map((draft, index) => `
+    <div class="library-card">
+      <div class="library-card-top">
+        <div>
+          <h3>${escapeHtml(draft.title)}</h3>
+          <div class="library-meta">
+            ${escapeHtml(draft.platform)} · ${escapeHtml(draft.length)} · ${escapeHtml(draft.updated)}
+          </div>
+        </div>
+        <span class="badge">DRAFT</span>
+      </div>
+      <div class="library-preview">${escapeHtml(draft.content)}</div>
+      <div class="library-actions">
+        <button class="btn btn-secondary" data-draft-open="${index}">Open Draft</button>
+        <button class="btn btn-secondary" data-copy-draft="${index}">Copy</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ---------------------------
+   Approved library
+   --------------------------- */
+
+function saveCurrentAsApproved() {
+  if (!currentSession || !currentSession.content) return;
+
+  const item = {
+    session_id: currentSession.session_id,
+    title: currentSession.title || "Approved content",
+    platform: $("platform").value,
+    content: currentSession.content,
+    updated: "Just now"
+  };
+
+  const index = approvedStore.findIndex(x => x.session_id === item.session_id);
+
+  if (index >= 0) {
+    approvedStore[index] = item;
+  } else {
+    approvedStore.unshift(item);
+  }
+
+  // Once approved, remove it from Drafts.
+  const draftIndex = draftStore.findIndex(x => x.session_id === item.session_id);
+  if (draftIndex >= 0) draftStore.splice(draftIndex, 1);
+
+  updateLibraryCounts();
+  renderDrafts();
+  renderApproved();
+}
+
+function renderApproved() {
+  const container = $("approvedList");
+
+  if (!approvedStore.length) {
+    container.innerHTML = `
+      <div class="library-empty">
+        <div style="font-size:28px;margin-bottom:10px;">✓</div>
+        <strong>No approved content yet</strong>
+        <div style="margin-top:6px;">Approve content and it will appear here.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = approvedStore.map((item, index) => `
+    <div class="library-card">
+      <div class="library-card-top">
+        <div>
+          <h3>${escapeHtml(item.title)}</h3>
+          <div class="library-meta">
+            ${escapeHtml(item.platform)} · Approved ${escapeHtml(item.updated)}
+          </div>
+        </div>
+        <span class="badge" style="border-color:rgba(74,222,128,.25);color:#86efac;background:rgba(74,222,128,.08);">APPROVED</span>
+      </div>
+      <div class="library-preview">${escapeHtml(item.content)}</div>
+      <div class="library-actions">
+        <button class="btn btn-secondary" data-approved-open="${index}">Open</button>
+        <button class="btn btn-secondary" data-approved-copy="${index}">Copy Content</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+
+/* ---------------------------
+   Start a completely new content request
+   --------------------------- */
+
+function startNewContent() {
+  sessionId = null;
+  selectedOption = null;
+  selectedLength = "Medium";
+  currentSession = null;
+
+  $("topic").value = "";
+  $("platform").value = "";
+  $("audience").value = "";
+  $("mood").value = "";
+  $("goal").value = "";
+
+  document.querySelectorAll(".lengths button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.length === "Medium");
+  });
+
+  $("cards").innerHTML = "";
+  $("editor").value = "";
+  $("editor").readOnly = false;
+  $("revision").value = "";
+  $("revision").disabled = false;
+  $("reviseBtn").disabled = false;
+  $("reviseBtn").textContent = "Revise";
+
+  $("approveBtn").disabled = false;
+  $("approveBtn").textContent = "Approve Content";
+  $("copyBtn").style.display = "inline-block";
+
+  $("optionsPanel").style.display = "none";
+  $("editorPanel").style.display = "none";
+  $("emptyState").style.display = "grid";
+  $("success").style.display = "none";
+
+  $("editorMeta").textContent = "No content selected";
+  setState("NEW_REQUEST");
+  showMainView("write");
+  window.scrollTo({top: 0, behavior: "smooth"});
+
+  $("topic").focus();
+  showToast("Ready for a new content request.");
+}
+
+/* ---------------------------
+   Navigation events
+   --------------------------- */
+
+$("writeNav").addEventListener("click", () => startNewContent());
+
+$("draftsNav").addEventListener("click", () => {
+  renderDrafts();
+  showMainView("drafts");
+});
+
+$("approvedNav").addEventListener("click", () => {
+  renderApproved();
+  showMainView("approved");
+});
+
+$("newDraftBtn").addEventListener("click", () => startNewContent());
+$("newApprovedBtn").addEventListener("click", () => startNewContent());
+
+/* ---------------------------
+   Generate
+   --------------------------- */
+
+$("generateBtn").addEventListener("click", async () => {
+  if (!validateBrief()) return;
+
+  $("generateBtn").disabled = true;
+  $("loading").style.display = "flex";
+  setState("GENERATING");
+
+  try {
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        topic: $("topic").value.trim(),
+        platform: $("platform").value,
+        audience: $("audience").value.trim(),
+        mood: $("mood").value.trim(),
+        length: selectedLength,
+        goal: $("goal").value.trim()
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Generation failed.");
+
+    sessionId = data.session_id;
+    selectedOption = null;
+    currentSession = null;
+    currentSession = {
+      session_id: data.session_id,
+      topic: $("topic").value.trim(),
+      platform: $("platform").value,
+      audience: $("audience").value.trim(),
+      mood: $("mood").value.trim(),
+      length: selectedLength,
+      goal: $("goal").value.trim(),
+      options: data.options || []
+    };
+
+    renderOptions(data.options);
+    setState(data.state);
+    $("emptyState").style.display = "none";
+    $("optionsPanel").style.display = "block";
+    $("editorPanel").style.display = "none";
+    $("success").style.display = "none";
+    $("editor").value = "";
+    $("editor").readOnly = false;
+    $("approveBtn").disabled = false;
+    $("approveBtn").textContent = "Approve Content";
+    $("revision").disabled = false;
+    $("reviseBtn").disabled = false;
+    $("reviseBtn").textContent = "Revise";
+    $("copyBtn").style.display = "inline-block";
+    showMainView("write");
+    window.scrollTo({top: 0, behavior: "smooth"});
+  } catch (error) {
+    showToast(error.message);
+    setState("NEW_REQUEST");
+  } finally {
+    $("generateBtn").disabled = false;
+    $("loading").style.display = "none";
+  }
+});
+
+function renderOptions(options) {
+  $("cards").innerHTML = options.map(option => `
+    <article class="card" id="card-${option.id}">
+      <div class="badge">${option.id}</div>
+      <h3>${escapeHtml(option.title)}</h3>
+      <div class="card-content">${escapeHtml(option.content)}</div>
+      <button class="select-btn" onclick="selectOption('${option.id}')">Select ${option.id}</button>
+    </article>
+  `).join("");
+}
+
+/* ---------------------------
+   Select option
+   --------------------------- */
+
+async function selectOption(optionId) {
+  try {
+    const response = await fetch("/api/select", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({session_id: sessionId, option_id: optionId})
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Selection failed.");
+
+    selectedOption = optionId;
+
+    const selected = currentSession.options.find(o => o.id === optionId);
+    currentSession.option_id = optionId;
+    currentSession.title = selected ? selected.title : `Option ${optionId}`;
+    currentSession.content = data.content;
+
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("selected"));
+    $(`card-${optionId}`).classList.add("selected");
+
+    $("editor").value = data.content;
+    $("editor").readOnly = false;
+    $("editorMeta").textContent = `Option ${optionId} · ${data.revision_count} revisions`;
+    $("success").style.display = "none";
+    $("editorPanel").style.display = "block";
+    $("approveBtn").disabled = false;
+    $("approveBtn").textContent = "Approve Content";
+    $("revision").disabled = false;
+    $("reviseBtn").disabled = false;
+    $("reviseBtn").textContent = "Revise";
+
+    saveCurrentAsDraft();
+    setState(data.state);
+    $("editorPanel").scrollIntoView({behavior:"smooth", block:"start"});
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+/* ---------------------------
+   Revision
+   --------------------------- */
+
+$("reviseBtn").addEventListener("click", async () => {
+  const request = $("revision").value.trim();
+  if (!request) {
+    $("revision").focus();
+    showToast("Tell the agent what you want changed.");
+    return;
+  }
+
+  $("reviseBtn").disabled = true;
+  $("reviseBtn").textContent = "Revising...";
+  setState("REVISING");
+
+  try {
+    const response = await fetch("/api/revise", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        session_id: sessionId,
+        revision_request: request
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Revision failed.");
+
+    $("editor").value = data.content;
+    $("editorMeta").textContent = `Option ${data.selected_option} · ${data.revision_count} revisions`;
+    $("revision").value = "";
+
+    currentSession.content = data.content;
+    currentSession.option_id = data.selected_option;
+    saveCurrentAsDraft();
+
+    setState(data.state);
+    showToast("Content revised successfully.");
+  } catch (error) {
+    showToast(error.message);
+    setState("OPTION_SELECTED");
+  } finally {
+    $("reviseBtn").disabled = false;
+    $("reviseBtn").textContent = "Revise";
+  }
+});
+
+/* ---------------------------
+   Approve
+   --------------------------- */
+
+$("approveBtn").addEventListener("click", async () => {
+  if (!sessionId) {
+    showToast("Please select a content option first.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/approve", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({session_id: sessionId})
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Approval failed.");
+
+    currentSession.content = data.content;
+    currentSession.approved = true;
+
+    saveCurrentAsApproved();
+
+    $("success").style.display = "block";
+    setState(data.state);
+    $("editor").readOnly = true;
+    $("approveBtn").disabled = true;
+    $("approveBtn").textContent = "✓ Approved";
+
+    // Copy remains available after approval.
+    $("copyBtn").style.display = "inline-block";
+
+    // Revisions are no longer allowed after approval.
+    $("revision").disabled = true;
+    $("reviseBtn").disabled = true;
+    $("reviseBtn").textContent = "Approved";
+
+    showToast("Content is approved and ready to save.");
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
+/* ---------------------------
+   Copy
+   --------------------------- */
+
+$("copyBtn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("editor").value);
+    showToast("Content copied to clipboard.");
+  } catch (error) {
+    showToast("Unable to copy content.");
+  }
+});
+
+/* ---------------------------
+   Open Draft
+   --------------------------- */
+
+$("draftsList").addEventListener("click", event => {
+  const openButton = event.target.closest("[data-draft-open]");
+  const copyButton = event.target.closest("[data-copy-draft]");
+
+  if (openButton) {
+    const item = draftStore[Number(openButton.dataset.draftOpen)];
+    if (!item) return;
+
+    sessionId = item.session_id;
+    selectedOption = item.option_id || null;
+
+    currentSession = {
+      session_id: item.session_id,
+      title: item.title,
+      content: item.content,
+      option_id: item.option_id,
+      topic: item.topic,
+      platform: item.platform,
+      audience: item.audience,
+      mood: item.mood,
+      length: item.length,
+      goal: item.goal,
+      approved: false
+    };
+
+    $("topic").value = item.topic || "";
+    $("platform").value = item.platform || "";
+    $("audience").value = item.audience || "";
+    $("mood").value = item.mood || "";
+    $("goal").value = item.goal || "";
+    selectedLength = item.length || "Medium";
+
+    document.querySelectorAll(".lengths button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.length === selectedLength);
+    });
+
+    $("editor").value = item.content || "";
+    $("editor").readOnly = false;
+    $("editorMeta").textContent = `Option ${item.option_id || "Selected"} · Draft`;
+    $("optionsPanel").style.display = "none";
+    $("editorPanel").style.display = "block";
+    $("success").style.display = "none";
+    $("approveBtn").disabled = false;
+    $("approveBtn").textContent = "Approve Content";
+    $("revision").disabled = false;
+    $("reviseBtn").disabled = false;
+    $("reviseBtn").textContent = "Revise";
+
+    setState("OPTION_SELECTED");
+    showMainView("write");
+    showToast("Draft opened.");
+  }
+
+  if (copyButton) {
+    const item = draftStore[Number(copyButton.dataset.copyDraft)];
+    if (item) {
+      navigator.clipboard.writeText(item.content)
+        .then(() => showToast("Draft copied."))
+        .catch(() => showToast("Unable to copy draft."));
+    }
+  }
+});
+
+/* ---------------------------
+   Open Approved
+   --------------------------- */
+
+$("approvedList").addEventListener("click", event => {
+  const openButton = event.target.closest("[data-approved-open]");
+  const copyButton = event.target.closest("[data-approved-copy]");
+
+  if (openButton) {
+    const item = approvedStore[Number(openButton.dataset.approvedOpen)];
+    if (!item) return;
+
+    sessionId = item.session_id;
+    currentSession = {
+      session_id: item.session_id,
+      title: item.title,
+      content: item.content,
+      platform: item.platform,
+      approved: true
+    };
+
+    $("editor").value = item.content || "";
+    $("editor").readOnly = true;
+    $("editorMeta").textContent = "Approved content";
+    $("optionsPanel").style.display = "none";
+    $("editorPanel").style.display = "block";
+    $("approveBtn").disabled = true;
+    $("approveBtn").textContent = "✓ Approved";
+    $("revision").disabled = true;
+    $("reviseBtn").disabled = true;
+    $("reviseBtn").textContent = "Approved";
+    $("copyBtn").style.display = "inline-block";
+    $("success").style.display = "block";
+
+    setState("READY_TO_SAVE");
+    showMainView("write");
+    showToast("Approved content opened.");
+  }
+
+  if (copyButton) {
+    const item = approvedStore[Number(copyButton.dataset.approvedCopy)];
+    if (item) {
+      navigator.clipboard.writeText(item.content)
+        .then(() => showToast("Approved content copied."))
+        .catch(() => showToast("Unable to copy approved content."));
+    }
+  }
+});
+
+/* Initial state */
+updateLibraryCounts();
+renderDrafts();
+renderApproved();
+showMainView("write");
+startNewContent();
+</script>
+</body>
+</html>
